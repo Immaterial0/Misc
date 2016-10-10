@@ -1,0 +1,88 @@
+/*  Intended strategy:
+Coins can be thought of as having a dimension from 0 to 4, based on the number of Coins directly adjacent either horizontally or vertically
+1 dimensional Coins are found in alcoves, 2 dimensional Coins are either in corners or linear along narrow paths, 3 dimensional Coins come as a single type but with at least 2 relevant orientations (with either 2 or 3 dimensions along the relevant path), and 4 dimensional Coins are surrounded by other Coins. 
+To note for the following explanation, there should only be one pass of the code over the level, so all rectangles will become effectively walls
+this means no rectangle should ever be deleted
+Going right to left, bottom to top (I think?) the code wil always start with either a 2 or one dimensional Coin at the initial point for rect creation
+For a one dimensional Coin, a rectangle will be drawn out in the only directional possible. The length/width of that rect will extend at least the distance of all 2 dimensional Coins in the path. The rectangle will also cover all 3 dimensional Coins which have 2 dimenions along the path of the rectangle, but only if the Coin does not come across a 4 dimensional Coin in it's path (in which case it will revert to a max length based on the last 2 dimensional Coin) unless it comes across another 2 dimensional Coin further in the path, in which case only 3rd or 4th dimensional Coins further along the path will matter. The rectangle will never include a 3 dimensional Coin which has only 1 dimension within the rectangle. 
+The only other options for the starting points of rectangles will be 2 dimensional Coins (simple based on the sweeping nature of the intended code), a rectangle should only be created which ends on a 1 dimensional Coin, or 3 corners (if width/length is larger than 1 Coin). The rectangle should not end with 2 corners that share the same x or same y both on 3 dimensional Coins (I think). In such a case, the width/height of rectangle will be reduced by one to not include the 3d Coins. 
+If this works as expected, it should find the minimium number of Rectangles.  */
+// updated note: it occurs to me there is at least one situation where this would not find the min rectangles without an update (consider the situation of 3 large rectangles aligned side to side, with the center rectangle slightly offset). Currently rectangles won't be enlarged if their width is greater than 1 if there is a coin above and below the min and max values of x. To fix this without causing more problems, one would have to check the coins to the side and continue to exand the rectangle only if the the dimensions wouldn't match to make a rectangle on each side 
+// possible solutions: changing x and y axis...
+// alternatively just need to check if there are sections with equal height on each side that match up, that seems like a fair bit of work to slightly reduce rectangles in some edge cases. but I should try to remember that, althuogh checking via rotating x and y might work better. 
+var grid = hero.navGrid;
+function wallify(x1, y1, w1, h1) {
+    hero.addRect(x1, y1, w1, h1);
+    for (var o = x1; o < x1 + w1; o++) {
+        for (var p = y1; p < y1 + h1; p++) {
+            grid[o][p] = 'wall';
+        }
+    }
+}
+// initial for loops to start picking Coins in corners and to move outward from there
+var length1 = grid.length;
+var height1 = grid[0].length;
+for (var i = 0; i < height1; i++) {
+    for (var j = 0; j < length1; j++) {
+        if (grid[j][i] === 'Coin') {
+            var maxX = 1;
+            var maxY = 1;
+            for (var m = j + 1; m < length1 && grid[m][i] === 'Coin'; m++)
+                maxX++;
+            // finds max width along x axis that's all coins  
+            if (maxX === 1) {
+                // code for 1 line expansions in y direction 
+                var d4multiplier = 1;
+                for (var n = i + 1; n < height1; n++) {
+                    if (grid[j][n] === 'Coin') {
+                        // check right/left. if neither is a Coin add to maxY and change d4 multiplier to 1, if both check above, if above a wall, add potX till this point and end, if another Coin, than mark d4multiplier to 0. if only R or L, than potX = current n value+1, if we ever end on a wall, pot added to x. 
+                        //what if grid j-1 doesn't exist? such as at edge of level potentially? this might be an issue. 
+                        if (j > 0 && j < grid.length && grid[j - 1][n] == 'Coin' && grid[j + 1][n] == 'Coin') {
+                            if (grid[j][n + 1] == 'Coin')
+                                d4multiplier = 0;    // if 4d Coins, sets multiplier to 0
+                            else {
+                                if (d4multiplier)
+                                    maxY = n - i;
+                                wallify(j, i, 1, maxY);
+                                break;
+                            }
+                        } else if (j > 0 && j < grid.length && grid[j - 1][n] == 'wall' && grid[j + 1][n] == 'wall') {
+                            maxY = n - i + 1;
+                            d4multiplier = 1;
+                        }
+                    } else {
+                        // if you run into a wall, previous Coin must have been a 2d corner Coin or a 1d Coin as other cases would have been addressed. 
+                        if (d4multiplier)
+                            maxY = n - i;
+                        wallify(j, i, 1, maxY);
+                        break;
+                    }
+                }
+            }    // end of maxX === 1 case
+            else {
+                // if maxX doesn't equal 1, we now see how many spaces up can be extended. 
+                var check1 = true;
+                for (var k = i + 1; check1; k++) {
+                    // determines the max height possible given maxX
+                    for (var l = j; l < maxX + j; l++) {
+                        // makes sure that all spots are Coins before we increase height
+                        if (grid[l][k] != 'Coin') {
+                            check1 = false;
+                            break;
+                        }
+                    }
+                    if (check1 && k < 20 && j > 0 && j < 20) {
+                        if (grid[j - 1][k] != 'Coin' || grid[j + maxX][k] !== 'Coin')
+                            maxY++;    //only add height if spots on this y level were Coins to maxX
+                        else
+                            break;
+                    } else if (check1 && k < 20 && j === 0 && j < 20)
+                        maxY++;    // case for if j === 0 specifically
+                    else
+                        break;
+                }
+                wallify(j, i, maxX, maxY);    // uses the established y and x values to make rectangle 
+            }
+        }
+    }
+}
