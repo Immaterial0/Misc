@@ -1,0 +1,156 @@
+<html>
+  <head>
+
+    <style>
+      body {
+        margin: 0px;
+        padding: 0px;
+      background-color:black;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="800" height="800"></canvas>
+     
+       <script>
+  var canvas = document.getElementById('canvas');
+var c = canvas.getContext('2d');
+var w = canvas.width;
+var h = canvas.height;
+var colors = ['red','green','blue','yellow'];
+var score = 0;
+var highscore = 0;
+  
+function floor () {
+  this.color = 'white';
+  this.colors = [];
+  this.draw = function(){
+      c.beginPath();
+      c.save(0);
+      c.strokeStyle = this.color;
+      c.moveTo(w, h);
+      c.lineTo(0, h);
+      c.lineWidth = 15;
+      c.stroke();
+      c.restore();   }; 
+  this.disco = function(){ 
+    // randomizes floor coloring
+    this.color = colors[ Math.floor( Math.random()*4 )];
+    this.colors.push(this.color);
+};}
+
+var floor1 = new floor();
+  
+function player () {
+  this.x = 300;
+  this.y = 400;
+  this.r = 20;
+  this.vy = 7;
+  this.fall = 0.6;
+  this.color = 'white';
+  this.colors = [];
+  this.draw = function(){
+  c.beginPath();
+    c.fillStyle = this.color;
+    c.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
+    c.fill();
+    c.stroke();
+    this.y += this.vy;
+    this.vy+= this.fall;
+   if (this.y >= w - this.r - 5) {
+     this.vy = -this.vy * 0.975;
+     if (JSON.stringify(this.colors) != JSON.stringify(floor1.colors)) {
+       this.colors = [];
+       floor1.colors = [];
+       if (score > highscore) {
+         highscore = score;}
+       score = 0;
+     }
+      else if (JSON.stringify(this.colors) == JSON.stringify(floor1.colors))
+       {
+         score += this.colors.length;
+         this.colors = [];
+          }
+     floor1.disco();
+     player1.color = 'purple';
+   } }};
+
+
+var player1 = new player();
+
+canvas.contentEditable = true;
+canvas.onkeydown = function(evt) {
+  if (evt.keyCode == 38 || evt.keyCode == 87) {
+    player1.color = 'red';
+    player1.colors.push(player1.color);
+    evt.preventDefault();
+  }
+  if (evt.keyCode == 37 || evt.keyCode == 65) {
+    player1.color = 'blue';
+    player1.colors.push(player1.color);
+    evt.preventDefault();}
+  if (evt.keyCode == 39 || evt.keyCode == 68) {
+    player1.color = 'yellow';
+    player1.colors.push(player1.color);
+    evt.preventDefault();  
+  }
+  if (evt.keyCode == 40 || evt.keyCode == 83) {
+    player1.color = 'green';
+    player1.colors.push(player1.color);
+    evt.preventDefault();  
+  }
+  if (evt.keyCode == 32){
+    if (floor1.colors.length == 0){
+    floor1.disco();
+    player1.color = 'purple';
+    game();
+    }
+  }
+};
+
+function scoring() {
+    c.save();
+    c.font = '20pt sans-serif';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillStyle = 'white';
+    c.fillText('score : ' + score, w * 0.8, 20);
+    c.fillText(player1.colors.length,w* 0.8+10, 80);
+    c.fillText(floor1.colors.length,w* 0.8+10, 110);
+    c.fillText('high score : ' + highscore, w*0.2,20);
+    c.restore();
+}
+
+function begin() {
+  c.save();
+    c.font = '20pt sans-serif';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillStyle = 'white';
+    c.fillText('A memory game. Use the arrow keys to change colors', w / 2, 200,w);
+      c.fillText('to match the floor. Press space to begin.', w / 2, 230,w);
+    c.restore();
+  player1.draw();
+  floor1.draw();
+  scoring();
+}
+  
+ 
+var x1;
+var timer = 50;  
+function game() {
+  c.clearRect(0, 0, w, h);
+  player1.draw();
+  floor1.draw();
+  scoring();
+  clearTimeout(x1);
+  x1 = setTimeout(game, timer);
+  }
+
+ begin();
+
+  </script>
+    
+    
+  </body>
+</html>      
